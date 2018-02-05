@@ -20,28 +20,52 @@ pointer.frames = 3
 pointer.frame = pointer.frames
 dirsprite = 0
 
+tiles = {}
+tiles.history = {}
+tiles.max = 4
+
+-- Place a direction tile
+function placetile()
+	if(mget(pointer.x, pointer.y, dirsprite) ~= 1) then
+		pointer.sprite = 7
+		mset(pointer.x, pointer.y, dirsprite)
+	end
+end
+
 -- move pointer
 function movepointer()
 	-- use mouse animation threshold to poll controls
 	pointer.frame -= 1
 	if (pointer.frame ~= 0) return
-
 	pointer.frame = pointer.frames
 
-	-- If button is pushed, let player select a direction tile
+	-- if button is pushed, let player select a direction tile
 	if (btn(4)) then
 		if (btn(0)) dirsprite = 5 -- left
 		if (btn(1)) dirsprite = 3 -- right
 		if (btn(2)) dirsprite = 2 -- up
 		if (btn(3)) dirsprite = 4 -- down
 
-		if(mget(pointer.x, pointer.y, dirsprite) ~= 1) then
-			pointer.sprite = 7
-			mset(pointer.x, pointer.y, dirsprite)
-		end
+		placetile()
 	else
-		pointer.sprite = 6
-		dirsprite = 0
+		-- place direction tile
+		if(pointer.sprite ~= 6) then
+			add(tiles.history, { pointer.x, pointer.y })
+			pointer.sprite = 6
+			dirsprite = 0
+
+			-- remove oldest direction tile
+			if(#tiles.history > tiles.max) then
+				-- remove from playing field the oldest item in
+				-- the table by sticking a blank sprite on the
+				-- map for its x and y coordinates...
+				mset(tiles.history[1][1], tiles.history[1][2], 0)
+				-- ...and removing it from the table
+				del(tiles.history, tiles.history[1])
+			end
+		end
+
+		-- Get direction from player
 		if (btn(0)) pointer.x -= 1
 		if (btn(1)) pointer.x += 1
 		if (btn(2)) pointer.y -= 1
@@ -57,8 +81,8 @@ end
 
 -- see if mouse needs to change direction
 function flipmouse()
-	x_check = 0
-	y_check = 0
+	local x_check = 0
+	local y_check = 0
 
 	if not (flr(mouse.x) % 8 == 0 and flr(mouse.y) % 8 == 0) then
 		return
@@ -103,6 +127,7 @@ function mousemove()
 	    mouse.sprite += 1
 	    mouse.frame = 0
 	end
+
 	if mouse.sprite > 19 then
 	    mouse.sprite = 16
 	end
